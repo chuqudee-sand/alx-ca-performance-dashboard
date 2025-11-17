@@ -10,15 +10,15 @@ export default function User() {
             src="/avatar.png"
             alt="User"
             className="mr-2 rounded-full"
-            width={36}
-            height={36}
+            width={46}
+            height={46}
           />
           <div className="flex flex-col">
-            <span className="text-sm font-medium">Name</span>
-            <span className="text-xs text-muted-foreground">Agent Admin</span>
+            <span className="text-sm font-medium">CA Special Ops</span>
+            <span className="text-xs text-muted-foreground">Admin</span>
           </div>
         </div>
-        <ChevronDown size={16} />
+        <ChevronDown size={20} />
       </div>
     </div>
   );

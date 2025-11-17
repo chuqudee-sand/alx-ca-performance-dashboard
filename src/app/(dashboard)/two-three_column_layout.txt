@@ -20,7 +20,7 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Row 1 — 2 columns */}
+      {/* Top row — 2 columns */}
       <div className="grid grid-cols-1 divide-y border-b border-border laptop:grid-cols-2 laptop:divide-x laptop:divide-y-0 laptop:divide-border">
         <Container className="py-4 laptop:col-span-1">
           <ChartWithInsight insight="All programs experienced a decline in graduation rates from Sprint 1 to Sprint 2. AiCE dropped from 42% → 35%, PF from 48% → 39%, and VA from 61% → 55%. Despite VA maintaining the highest performance, the consistent dip across programs suggests a broader cross-program challenge with learner persistence in Sprint 2.">
@@ -34,8 +34,8 @@ export default function Home() {
         </Container>
       </div>
 
-      {/* Row 2 — 2 columns */}
-      <div className="grid grid-cols-1 divide-y border-b border-border laptop:grid-cols-2 laptop:divide-x laptop:divide-y-0 laptop:divide-border">
+      {/* Bottom row — 3 columns */}
+      <div className="grid grid-cols-1 divide-y border-b border-border laptop:grid-cols-3 laptop:divide-x laptop:divide-y-0 laptop:divide-border">
         <Container className="py-4 laptop:col-span-1">
           <ChartWithInsight insight="Nigeria and Kenya together account for nearly half of all paid learners, making them ALX's strongest revenue-driving regions. Ghana, Morocco, and Rest of Africa form a strong mid-tier, while Rwanda and Ethiopia contribute smaller volumes but maintain steady participation. South Africa and Egypt show moderate but consistent contributions, indicating stable but slower-scaling markets. We can protect and deepen engagement in these two top countries, as retention or payment disruptions here significantly impact overall revenue.">
             <CountryLearnersChart />
@@ -46,17 +46,10 @@ export default function Home() {
             <CustomerSatisfication />
           </ChartWithInsight>
         </Container>
-      </div>
-
-      {/* Row 3 — 2 columns */}
-      <div className="grid grid-cols-1 divide-y border-b border-border laptop:grid-cols-2 laptop:divide-x laptop:divide-y-0 laptop:divide-border">
         <Container className="py-4 laptop:col-span-1">
           <ChartWithInsight insight="Professional Foundations is the largest contributor to ALX's total graduate volume, producing 29,435 graduates, followed by the Virtual Assistant program with 21,069 graduates. AiCE contributes a smaller but growing pool with 2,831 graduates. This reflects PF's role as the mandatory gateway into tech programs, while VA stands out as the strongest non-mandatory program in terms of learner outcomes. AiCE remains niche but shows potential as an emerging specialization pipeline.">
             <Graduation />
           </ChartWithInsight>
-        </Container>
-        <Container className="py-4 laptop:col-span-1">
-          {/* Optionally, leave this space empty for future chart */}
         </Container>
       </div>
     </div>

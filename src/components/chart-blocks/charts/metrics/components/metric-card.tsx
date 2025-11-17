@@ -7,11 +7,15 @@ export default function MetricCard({
   value,
   change,
   className,
+  showChange = true,
+  showTarget = false, // add this
 }: {
   title: string;
   value: string;
-  change: number;
+  change?: number;
   className?: string;
+  showChange?: boolean;
+  showTarget?: boolean;
 }) {
   return (
     <section className={cn("flex flex-col", className)}>
@@ -19,10 +23,12 @@ export default function MetricCard({
         {title}
       </h2>
       <div className="flex items-center gap-2">
-        <span className="text-xl font-medium">{value}</span>
-        <ChangeIndicator change={change} />
+        <span className="text-3xl font-semibold">{value}</span>
+        {showChange && typeof change === "number" && <ChangeIndicator change={change} />}
       </div>
-      <div className="text-xs text-muted-foreground">Compare to last month</div>
+      {showTarget && (
+        <div className="text-xs text-muted-foreground">Compare to target</div>
+      )}
     </section>
   );
 }
@@ -33,8 +39,8 @@ function ChangeIndicator({ change }: { change: number }) {
       className={cn(
         "flex items-center rounded-sm px-1 py-0.5 text-xs text-muted-foreground",
         change > 0
-          ? "bg-green-50 text-green-500 dark:bg-green-950"
-          : "bg-red-50 text-red-500 dark:bg-red-950",
+          ? "bg-green-50 text-green-600 dark:bg-green-950"
+          : "bg-red-50 text-red-600 dark:bg-red-950",
       )}
     >
       {change > 0 ? "+" : ""}

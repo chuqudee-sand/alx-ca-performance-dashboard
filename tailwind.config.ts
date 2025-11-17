@@ -63,6 +63,9 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom company colors
+        "berkeley-blue": "#002B56",
+        "blue-ncs": "#028ECA",
       },
       borderRadius: {
         lg: "var(--radius)",

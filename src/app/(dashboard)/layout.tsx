@@ -7,7 +7,7 @@ export default function DashboardLayout({
 }) {
   return (
     <>
-      <TopNav title="Dashboard" />
+      <TopNav title="CA Programs Overview" />
       <main>{children}</main>
     </>
   );
