@@ -1,76 +1,34 @@
-"use client";
+return (
+  <div style={{ color: '#002B56' }}>
+    <header style={{ marginBottom: '40px' }}>
+      <h1 style={{ fontSize: '30px', fontWeight: 'bold', margin: 0 }}>Executive Overview</h1>
+      <p style={{ color: '#64748b', marginTop: '8px' }}>Live 2026 Revenue Pipeline</p>
+    </header>
 
-import { useState, useEffect } from 'react';
-import { Card, Metric, Text, ProgressBar, Grid, Title, Flex, Badge } from "@tremor/react";
-
-export default function Dashboard() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL;
-    if (!API_URL) return;
-
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(json => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch(err => console.error("Error fetching Master_Lake:", err));
-  }, []);
-
-  if (loading) return <div className="p-10 text-[#002B56] animate-pulse">Loading Revenue Data...</div>;
-
-  // DYNAMIC CALCULATIONS
-  const totalProjected = data.reduce((acc, row) => {
-    const val = parseFloat(row.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0);
-    return acc + val;
-  }, 0);
-
-  const totalCurrent = data.reduce((acc, row) => {
-    const val = parseFloat(row.Current_Revenue?.replace(/[^0-9.-]+/g,"") || 0);
-    return acc + val;
-  }, 0);
-
-  const goal = 6000000;
-  const progressPercent = (totalProjected / goal) * 100;
-
-  return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-[#002B56]">Executive Overview</h1>
-        <p className="text-slate-500">Live 2026 Revenue Pipeline</p>
-      </header>
-
-      {/* Main $6M Goal Card */}
-      <Card className="ring-t-4 ring-[#05F283]">
-        <Flex justifyContent="between">
-          <Text className="font-medium text-[#002B56]">Progress to $6.0M Access Fee Goal</Text>
-          <Badge color="emerald">{Math.round(progressPercent)}%</Badge>
-        </Flex>
-        <Metric className="text-[#002B56] mt-2">
-          ${totalProjected.toLocaleString()} Projected
-        </Metric>
-        <ProgressBar value={progressPercent} color="emerald" className="mt-4" />
-        <p className="text-xs mt-3 text-slate-400 font-semibold uppercase tracking-wider">
-          Total Realized (Month 1): ${totalCurrent.toLocaleString()}
-        </p>
-      </Card>
-
-      {/* Country/Program Breakdown */}
-      <Grid numItemsLg={3} className="gap-6 mt-6">
-        {data.slice(0, 6).map((item, idx) => (
-          <Card key={idx} decoration="top" decorationColor={parseFloat(item.Activation_Health) < 80 ? "red" : "emerald"}>
-            <Text className="text-xs uppercase text-slate-400">{item.Program} - {item.Country}</Text>
-            <Metric className="text-[#002B56] text-xl">{item.Projected_Revenue}</Metric>
-            <Flex className="mt-4">
-              <Text className="text-xs">Activation Health</Text>
-              <Text className="text-xs font-bold">{item.Activation_Health}</Text>
-            </Flex>
-          </Card>
-        ))}
-      </Grid>
+    {/* The $6M Progress Tracker Box */}
+    <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '8px', borderTop: '4px solid #05F283', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '32px' }}>
+      <div style={{ fontWeight: '500' }}>Progress to $6.0M Access Fee Goal</div>
+      <div style={{ fontSize: '36px', fontWeight: 'bold', marginTop: '8px' }}>
+        ${totalProjected.toLocaleString()} / $6.0M
+      </div>
+      {/* Visual Progress Bar */}
+      <div style={{ width: '100%', backgroundColor: '#e2e8f0', height: '12px', borderRadius: '6px', marginTop: '16px', overflow: 'hidden' }}>
+        <div style={{ width: `${progressPercent}%`, backgroundColor: '#05F283', height: '100%' }}></div>
+      </div>
     </div>
-  );
-}
+
+    {/* Grid of Country Cards */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+      {data.slice(0, 9).map((item, idx) => (
+        <div key={idx} style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderTop: '4px solid #5648B7', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>{item.Program} - {item.Country}</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>{item.Projected_Revenue}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '12px' }}>
+            <span>Activation Health</span>
+            <span style={{ fontWeight: 'bold' }}>{item.Activation_Health}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
