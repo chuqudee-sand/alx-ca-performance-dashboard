@@ -1,3 +1,5 @@
+"use client"; // <--- THIS IS THE FIX
+
 import { BarChart, Title, Subtitle, Card } from "@tremor/react";
 
 export default function HistoricalView() {
