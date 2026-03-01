@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const activationRate = (totals.activated / totals.enrolled) * 100 || 0;
   const projectedGrads = Math.floor(totals.activated * 0.5);
-  const healthStatus = activationRate >= 80 ? {icon: '✅', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️', text: 'At Risk'} : {icon: '🚨', text: 'Critical'};
+  const healthStatus = activationRate >= 80 ? {icon: '✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️ At Risk', text: 'At Risk'} : {icon: '🚨 Critical', text: 'Critical'};
 
   const countryMap = filteredData.reduce((acc: Record<string, CountryData>, row) => {
     const country = row.Country || 'Unknown';
