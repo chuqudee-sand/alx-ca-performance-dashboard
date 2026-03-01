@@ -22,7 +22,7 @@ export default function Dashboard() {
     });
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', marginLeft: '240px', fontSize: '20px' }}>Loading Revenue Intelligence...</div>;
+  if (loading) return <div style={{ padding: '40px', marginLeft: '240px', fontSize: '20px' }}>Loading data from all CA program trackers ...</div>;
 
   const filteredData = sprint === 'All' ? data : data.filter(d => d.Sprint === sprint);
 
@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const activationRate = (totals.activated / totals.enrolled) * 100 || 0;
   const projectedGrads = Math.floor(totals.activated * 0.5);
-  const healthStatus = activationRate >= 80 ? {icon: '✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️ At Risk', text: 'At Risk'} : {icon: '🚨 Critical', text: 'Critical'};
+  const healthStatus = activationRate >= 80 ? {icon: '    ✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '    ⚠️ At Risk', text: 'At Risk'} : {icon: '    🚨 Critical', text: 'Critical'};
 
   const countryMap = filteredData.reduce((acc: Record<string, CountryData>, row) => {
     const country = row.Country || 'Unknown';
