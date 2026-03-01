@@ -15,111 +15,157 @@ export default function Dashboard() {
     });
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', marginLeft: '260px' }}>Loading Career Accelerator Data...</div>;
+  if (loading) return <div style={{ padding: '40px', marginLeft: '240px' }}>Loading Revenue Intelligence...</div>;
 
-  // --- LOGIC & FILTERING ---
+  // --- DATA FILTERING ---
   const filteredData = sprint === 'All' ? data : data.filter(d => d.Sprint === sprint);
 
+  // --- REVENUE & KPI CALCULATIONS ---
   const totals = filteredData.reduce((acc, row) => {
-    acc.enrolled += parseInt(row.Current_Enrolled || 0);
-    acc.activated += parseInt(row.Current_Activated || 0);
+    const enrolled = parseInt(row.Current_Enrolled || 0);
+    const activated = parseInt(row.Current_Activated || 0);
+    const graduated = parseInt(row.Current_Graduated || 0);
+    const program = (row.Program || '').toUpperCase();
+    
+    acc.enrolled += enrolled;
+    acc.activated += activated;
+    acc.graduated += graduated;
+    
+    // Program-Aware Revenue Logic
+    const activeOnly = activated - graduated;
+    const monthlyRate = 5;
+    
+    // VA & AiCE = 2 months | PF = 3 months
+    let gradMultiplier = 2; 
+    if (program.includes('PF')) gradMultiplier = 3; 
+    
+    acc.revRealized += (activeOnly * monthlyRate) + (graduated * monthlyRate * gradMultiplier);
     acc.revProjected += parseFloat(row.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0);
-    acc.revCurrent += parseFloat(row.Current_Revenue?.replace(/[^0-9.-]+/g,"") || 0);
-    acc.projectedGrads += parseInt(row.Projected_Grads || 0);
+    
     return acc;
-  }, { enrolled: 0, activated: 0, revProjected: 0, revCurrent: 0, projectedGrads: 0 });
+  }, { enrolled: 0, activated: 0, graduated: 0, revRealized: 0, revProjected: 0 });
 
   const activationRate = (totals.activated / totals.enrolled) * 100 || 0;
-  const healthIcon = activationRate >= 80 ? '✅ Healthy' : activationRate >= 60 ? '⚠️ At Risk' : '🚨 Critical';
+  const projectedGrads = Math.floor(totals.activated * 0.5);
+  const healthStatus = activationRate >= 80 ? {icon: '✅', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️', text: 'At Risk'} : {icon: '🚨', text: 'Critical'};
 
-  // --- NARRATIVE LOGIC ---
-  const topCountry = [...filteredData].sort((a,b) => parseFloat(b.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0) - parseFloat(a.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0))[0];
-  const lowEnrollHighHealth = filteredData.filter(d => parseInt(d.Current_Enrolled) < 100 && parseFloat(d.Activation_Health) > 85);
+  // --- COUNTRY GROUPING (Aggregating all programs per country) ---
+  const countryMap = filteredData.reduce((acc, row) => {
+    const country = row.Country;
+    const rev = parseFloat(row.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0);
+    const enrolled = parseInt(row.Current_Enrolled || 0);
+    const activated = parseInt(row.Current_Activated || 0);
+    const health = parseFloat(row.Activation_Health || 0);
+
+    if (!acc[country]) acc[country] = { name: country, totalRev: 0, enrolled: 0, health: 0, count: 0 };
+    acc[country].totalRev += rev;
+    acc[country].enrolled += enrolled;
+    acc[country].health += health;
+    acc[country].count += 1;
+    return acc;
+  }, {});
+
+  const sortedCountries = Object.values(countryMap).sort((a: any, b: any) => b.totalRev - a.totalRev);
+  const topCountry = sortedCountries[0] as any;
+  
+  // Logic for small but high-health countries
+  const starPerformer = Object.values(countryMap).find((c: any) => c.enrolled < 100 && (c.health / c.count) > 85) as any;
 
   return (
-    <div style={{ marginLeft: '260px', padding: '40px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif', color: '#002B56' }}>
+    <div style={{ marginLeft: '240px', padding: '40px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif', color: '#002B56' }}>
       
-      {/* HEADER & FILTERS */}
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '28px' }}>Executive Summary {healthIcon}</h1>
-          <p style={{ color: '#64748b' }}>2026 Academic Year Performance</p>
+          <h1 style={{ margin: 0, fontSize: '26px' }}>Executive Summary {healthStatus.icon}</h1>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Career Accelerator Strategic OKRs</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <select style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} disabled><option>2026</option></select>
-          <select 
-            value={sprint} 
-            onChange={(e) => setSprint(e.target.value)}
-            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
-          >
-            <option value="All">All Sprints</option>
-            <option value="Sprint 1">Sprint 1</option>
-            <option value="Sprint 2">Sprint 2</option>
-            <option value="Sprint 3">Sprint 3</option>
-          </select>
+        <select 
+          value={sprint} 
+          onChange={(e) => setSprint(e.target.value)}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', cursor: 'pointer', backgroundColor: 'white', fontWeight: 'bold' }}
+        >
+          <option value="All">All Sprints</option>
+          <option value="Sprint 1">Sprint 1</option>
+          <option value="Sprint 2">Sprint 2</option>
+          <option value="Sprint 3">Sprint 3</option>
+        </select>
+      </div>
+
+      {/* SCORECARDS ROW 1 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '15px' }}>
+        <Card title="Paid Enrolled" value={totals.enrolled.toLocaleString()} />
+        <Card title="Activated" value={totals.activated.toLocaleString()} />
+        <Card 
+          title="Activation Rate" 
+          value={`${activationRate.toFixed(1)}%`} 
+          subText={healthStatus.text}
+          valueColor={activationRate < 80 ? '#ef4444' : '#059669'}
+        />
+        <Card title="Current Graduates" value={totals.graduated.toLocaleString()} />
+      </div>
+
+      {/* SCORECARDS ROW 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '30px' }}>
+        <Card 
+          title="Projected Graduation" 
+          value={projectedGrads.toLocaleString()} 
+          subText="At 50% target Grad rate" 
+        />
+        <Card title="Current Total Revenue" value={`$${totals.revRealized.toLocaleString()}`} subText="Realized via Active/Grad status" />
+        <Card title="Projected Total Revenue" value={`$${totals.revProjected.toLocaleString()}`} subText="Access Fee Target" />
+      </div>
+
+      {/* PROGRESS BAR */}
+      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', marginBottom: '30px', border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px', fontWeight: 'bold' }}>
+          <span>Revenue Progress ($6M Global Goal)</span>
+          <span>{((totals.revRealized / 6000000) * 100).toFixed(1)}%</span>
+        </div>
+        <div style={{ width: '100%', height: '10px', backgroundColor: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
+          <div style={{ width: `${Math.min((totals.revRealized / 6000000) * 100, 100)}%`, height: '100%', backgroundColor: '#05F283' }}></div>
         </div>
       </div>
 
-      {/* 1. KEY SCORECARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>ENROLLMENT & ACTIVATION</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '10px' }}>{totals.enrolled.toLocaleString()} / {totals.activated.toLocaleString()}</div>
-          <div style={{ fontSize: '14px', color: activationRate < 80 ? '#ef4444' : '#059669', fontWeight: 'bold' }}>{activationRate.toFixed(1)}% Activation Rate</div>
-        </div>
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>REVENUE REALIZATION</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '10px' }}>${totals.revCurrent.toLocaleString()}</div>
-          <div style={{ fontSize: '14px', color: '#64748b' }}>Projected Target: ${totals.revProjected.toLocaleString()}</div>
-        </div>
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>GRADUATION PIPELINE</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '10px' }}>{totals.projectedGrads.toLocaleString()}</div>
-          <div style={{ fontSize: '14px', color: '#64748b' }}>Expected at 50% Grad Rate: {(totals.activated * 0.5).toFixed(0)}</div>
-        </div>
-      </div>
-
-      {/* 3. PROGRESS BAR */}
-      <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', marginBottom: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>
-          <span>Overall Revenue Progress ($6M Goal)</span>
-          <span>{((totals.revProjected / 6000000) * 100).toFixed(1)}%</span>
-        </div>
-        <div style={{ width: '100%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
-          <div style={{ width: `${(totals.revProjected / 6000000) * 100}%`, height: '100%', backgroundColor: '#05F283' }}></div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        {/* 6. AUTOMATED SUMMARY TEXT BOX */}
-        <div style={{ backgroundColor: '#002B56', color: 'white', padding: '30px', borderRadius: '12px', lineHeight: '1.6' }}>
-          <h3 style={{ margin: '0 0 15px 0', color: '#05F283' }}>Strategic Insights</h3>
-          <p>
-            Our current overall activation health is <strong>{healthIcon.split(' ')[1]}</strong>. 
-            At a standard 50% graduation benchmark, we anticipate <strong>{(totals.activated * 0.5).toLocaleString()} successful graduates</strong>.
+      {/* INSIGHTS & RANKING */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px' }}>
+        <div style={{ backgroundColor: '#002B56', color: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ margin: '0 0 15px 0', color: '#05F283', fontSize: '18px' }}>Strategic Narrative</h3>
+          <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '15px' }}>
+            Overall activation health is <strong>{healthStatus.text}</strong>. 
+            Based on a 50% graduation benchmark, we anticipate <strong>{projectedGrads.toLocaleString()} graduates</strong> contributing to the total Access Fee realization.
           </p>
-          <p>
-            The top revenue contributor is currently <strong>{topCountry?.Country} ({topCountry?.Program})</strong>. 
-            {lowEnrollHighHealth.length > 0 && ` Noteworthy: ${lowEnrollHighHealth[0].Country} shows exceptional health despite low enrollment.`}
+          <p style={{ fontSize: '15px', lineHeight: '1.6' }}>
+            <strong>{topCountry?.name}</strong> stands as the primary revenue engine. 
+            {starPerformer && ` Notably, ${starPerformer.name} shows high efficiency with ${Math.round(starPerformer.health / starPerformer.count)}% activation health despite smaller enrollment scale.`}
           </p>
           {activationRate < 80 && (
-            <div style={{ marginTop: '15px', padding: '10px', borderLeft: '4px solid #FF5347', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-              <strong>Action Needed:</strong> Low activation health detected. Deploy nudges and volunteer mentors to underperforming cohorts immediately.
+            <div style={{ marginTop: '20px', padding: '15px', borderLeft: '4px solid #FF5347', backgroundColor: 'rgba(255,255,255,0.05)', fontSize: '14px', borderRadius: '0 8px 8px 0' }}>
+              <span style={{ color: '#FF5347', fontWeight: 'bold' }}>ADVISORY:</span> Low activation triggers a risk to Month 2 revenue. Recommend deploying targeted nudges and community volunteers to support learners in regions trending below 70%.
             </div>
           )}
         </div>
 
-        {/* 4. COUNTRY RANKING (Simplified List) */}
-        <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px' }}>
-          <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Top Country Contributions</h3>
-          {[...filteredData].sort((a,b) => parseFloat(b.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0) - parseFloat(a.Projected_Revenue?.replace(/[^0-9.-]+/g,"") || 0)).slice(0,5).map((c, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ fontSize: '14px' }}>{c.Country}</span>
-              <span style={{ fontWeight: 'bold' }}>{c.Projected_Revenue}</span>
+        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Top 5 Contributing Countries</h3>
+          {sortedCountries.slice(0, 5).map((c: any, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: i === 4 ? 'none' : '1px solid #f1f5f9' }}>
+              <span style={{ fontSize: '14px', fontWeight: '500' }}>{c.name}</span>
+              <span style={{ fontWeight: 'bold', color: '#002B56' }}>${c.totalRev.toLocaleString()}</span>
             </div>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Card({ title, value, subText, valueColor }: any) {
+  return (
+    <div style={{ backgroundColor: 'white', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>{title}</div>
+      <div style={{ fontSize: '24px', fontWeight: 'bold', color: valueColor || '#002B56' }}>{value}</div>
+      {subText && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{subText}</div>}
     </div>
   );
 }
