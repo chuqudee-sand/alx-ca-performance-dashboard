@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const activationRate = (totals.activated / totals.enrolled) * 100 || 0;
   const projectedGrads = Math.floor(totals.activated * 0.5);
-  const healthStatus = activationRate >= 80 ? {icon: '    ✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '    ⚠️ At Risk', text: 'At Risk'} : {icon: '    🚨 Critical', text: 'Critical'};
+  const healthStatus = activationRate >= 80 ? {icon: '✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️ At Risk', text: 'At Risk'} : {icon: '🚨 Critical', text: 'Critical'};
 
   const countryMap = filteredData.reduce((acc: Record<string, CountryData>, row) => {
     const country = row.Country || 'Unknown';
@@ -81,7 +81,7 @@ export default function Dashboard() {
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '32px' }}>Executive Summary {healthStatus.icon}</h1>
+          <h1 style={{ margin: 0, fontSize: '32px' }}>Executive Summary      {healthStatus.icon}</h1>
           <p style={{ color: '#64748b', fontSize: '16px', marginTop: '5px' }}>2026 OKR Tracking Platform</p>
         </div>
         <div style={{ display: 'flex', gap: '15px' }}>
