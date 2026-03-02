@@ -22,7 +22,7 @@ export default function Dashboard() {
     });
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', marginLeft: '240px', fontSize: '20px' }}>Loading data from all CA program trackers ...</div>;
+  if (loading) return <div style={{ padding: '40px', marginLeft: '240px', fontSize: '20px' }}>Fetching Data from all CA Program Trackers....</div>;
 
   const filteredData = sprint === 'All' ? data : data.filter(d => d.Sprint === sprint);
 
