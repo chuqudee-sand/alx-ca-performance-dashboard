@@ -1,5 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
+  LineChart, Line, ComposedChart 
+} from 'recharts';
 
 interface RowData {
   Sprint: string;
@@ -30,15 +34,13 @@ export default function AnalyticsPage() {
     });
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', marginLeft: '240px', fontSize: '20px', color: '#002B56' }}>Loading Analytics Engine...</div>;
+  if (loading) return <div style={{ padding: '40px', marginLeft: '260px', fontSize: '20px', color: '#002B56' }}>Loading Analytics Engine...</div>;
 
   // --- FILTERING LOGIC ---
-  // 1. Program Filter controls EVERYTHING (Charts + Scorecards)
   const programFilteredData = programFilter === 'All' 
     ? data 
     : data.filter(d => (d.Program || '').toUpperCase().includes(programFilter.toUpperCase()));
 
-  // 2. Sprint Filter controls ONLY SCORECARDS (Applied on top of Program filter)
   const scorecardData = sprintFilter === 'All'
     ? programFilteredData
     : programFilteredData.filter(d => d.Sprint === sprintFilter);
@@ -53,38 +55,55 @@ export default function AnalyticsPage() {
 
   const activationRate = totals.enrolled > 0 ? (totals.activated / totals.enrolled) * 100 : 0;
 
-  // --- CHART 3: Grad/Completion by Country (Using Program-Filtered Data) ---
-  const countryData = programFilteredData.reduce((acc: any, row) => {
-    const c = row.Country || 'Unknown';
-    if (!acc[c]) acc[c] = { enrolled: 0, graduated: 0 };
-    acc[c].enrolled += parseInt(row.Current_Enrolled || '0');
-    acc[c].graduated += parseInt(row.Current_Graduated || '0');
-    return acc;
-  }, {});
+  // --- CHART DATA PREPARATION ---
   
-  const sortedCountries = Object.entries(countryData)
-    .map(([name, vals]: any) => ({ 
-      name, 
-      rate: vals.enrolled > 0 ? (vals.graduated / vals.enrolled) * 100 : 0 
-    }))
-    .sort((a, b) => b.rate - a.rate)
-    .slice(0, 6);
-
-  // --- CHART 6: CSAT & NPS by Sprint (Placeholder logic using 0s) ---
-  const sprintStats = programFilteredData.reduce((acc: any, row) => {
-    const s = row.Sprint || 'Unknown';
-    if (!acc[s]) acc[s] = { count: 0, csat: 0, nps: 0 };
+  // 1. Group by Sprint (For Charts 1, 2, 4, 6)
+  const sprintGroups = programFilteredData.reduce((acc: any, row) => {
+    const s = row.Sprint || 'Unknown Sprint';
+    if (!acc[s]) acc[s] = { Sprint: s, Enrolled: 0, Activated: 0, Graduated: 0, CSAT_Sum: 0, NPS_Sum: 0, count: 0 };
+    acc[s].Enrolled += parseInt(row.Current_Enrolled || '0');
+    acc[s].Activated += parseInt(row.Current_Activated || '0');
+    acc[s].Graduated += parseInt(row.Current_Graduated || '0');
+    acc[s].CSAT_Sum += parseFloat(row.CSAT || '0');
+    acc[s].NPS_Sum += parseFloat(row.NPS || '0');
     acc[s].count += 1;
-    acc[s].csat += parseFloat(row.CSAT || '0');
-    acc[s].nps += parseFloat(row.NPS || '0');
     return acc;
   }, {});
+
+  const sprintData = Object.values(sprintGroups).map((d: any) => ({
+    ...d,
+    GradRate: d.Activated > 0 ? parseFloat(((d.Graduated / d.Activated) * 100).toFixed(1)) : 0,
+    CSAT: d.count > 0 ? parseFloat((d.CSAT_Sum / d.count).toFixed(1)) : 0,
+    NPS: d.count > 0 ? parseFloat((d.NPS_Sum / d.count).toFixed(1)) : 0,
+  })).sort((a: any, b: any) => a.Sprint.localeCompare(b.Sprint));
+
+  // 2. Group by Country (For Charts 3, 5)
+  const countryGroups = programFilteredData.reduce((acc: any, row) => {
+    const c = row.Country || 'Unknown';
+    if (!acc[c]) acc[c] = { Country: c, Enrolled: 0, Activated: 0, Graduated: 0 };
+    acc[c].Enrolled += parseInt(row.Current_Enrolled || '0');
+    acc[c].Activated += parseInt(row.Current_Activated || '0');
+    acc[c].Graduated += parseInt(row.Current_Graduated || '0');
+    return acc;
+  }, {});
+
+  const countryDataByPop = Object.values(countryGroups)
+    .sort((a: any, b: any) => b.Enrolled - a.Enrolled)
+    .slice(0, 8); // Top 8 for visual clarity
+
+  const countryDataByGrad = Object.values(countryGroups)
+    .map((d: any) => ({
+      Country: d.Country,
+      GradRate: d.Activated > 0 ? parseFloat(((d.Graduated / d.Activated) * 100).toFixed(1)) : 0
+    }))
+    .sort((a: any, b: any) => b.GradRate - a.GradRate)
+    .slice(0, 8);
 
   return (
     <div style={{ marginLeft: '260px', padding: '40px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif', color: '#002B56' }}>
       
       {/* HEADER & FILTERS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '32px' }}>Analytics & Performance</h1>
           <p style={{ color: '#64748b', fontSize: '16px', marginTop: '5px' }}>Historical Data & Cohort Analysis</p>
@@ -108,7 +127,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* SCORECARDS (Controlled by Sprint & Program) */}
+      {/* SCORECARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
         <Card title="Total Paid Enrolled" value={totals.enrolled.toLocaleString()} />
         <Card title="Total Activated" value={totals.activated.toLocaleString()} />
@@ -123,71 +142,103 @@ export default function AnalyticsPage() {
       {/* CHARTS GRID SECTION */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
         
-        {/* CHART 1: Activation vs Graduation (Visual Placeholder) */}
+        {/* CHART 1: Activation vs Graduation */}
         <div style={chartBox}>
-          <h3 style={chartTitle}>1. Activation vs Graduation by Cohort</h3>
-          <div style={{ height: '200px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingTop: '20px' }}>
-            {['Cohort A', 'Cohort B', 'Cohort C'].map((c, i) => (
-              <div key={i} style={{ display: 'flex', gap: '5px', alignItems: 'flex-end', height: '100%' }}>
-                <div style={{ width: '40px', height: `${80 - (i*10)}%`, backgroundColor: '#002B56', borderRadius: '4px 4px 0 0' }}></div>
-                <div style={{ width: '40px', height: `${50 - (i*5)}%`, backgroundColor: '#05F283', borderRadius: '4px 4px 0 0' }}></div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px', fontSize: '12px', color: '#64748b' }}>
-             <span><span style={{ color: '#002B56' }}>■</span> Activated</span>
-             <span><span style={{ color: '#05F283' }}>■</span> Graduated</span>
-          </div>
+          <h3 style={chartTitle}>1. Activation vs Graduation (By Sprint)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={sprintData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
+              <YAxis tick={{fontSize: 12}} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} />
+              <Legend wrapperStyle={{fontSize: '12px'}} />
+              <Bar dataKey="Activated" fill="#002B56" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Graduated" fill="#05F283" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* CHART 3: Graduation Rate by Country */}
+        {/* CHART 2: Graduation Rates by Sprint */}
         <div style={chartBox}>
-          <h3 style={chartTitle}>3. Graduation / Completion Rate by Country</h3>
-          <div style={{ marginTop: '15px' }}>
-            {sortedCountries.map((c, i) => (
-              <div key={i} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '5px' }}>
-                  <span>{c.name}</span>
-                  <span style={{ fontWeight: 'bold' }}>{c.rate.toFixed(1)}%</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px' }}>
-                  <div style={{ width: `${c.rate}%`, height: '100%', backgroundColor: '#5648B7', borderRadius: '4px' }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <h3 style={chartTitle}>2. Graduation Rates by Sprint</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={sprintData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
+              <YAxis tick={{fontSize: 12}} domain={[0, 100]} unit="%" />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val) => `${val}%`} />
+              <Legend wrapperStyle={{fontSize: '12px'}} />
+              <Line type="monotone" dataKey="GradRate" name="Graduation Rate %" stroke="#5648B7" strokeWidth={3} dot={{r: 5}} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
         
-        {/* CHART 4: Program Performance */}
+        {/* CHART 3: Graduation Completion by Country */}
         <div style={chartBox}>
-          <h3 style={chartTitle}>4. Program Performance (Sprints)</h3>
-          <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-             Line Chart: Trajectory over Time
-          </div>
+          <h3 style={chartTitle}>3. Graduation Rate by Country (Top 8)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={countryDataByGrad}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="Country" tick={{fontSize: 11}} />
+              <YAxis tick={{fontSize: 12}} domain={[0, 100]} unit="%" />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val) => `${val}%`} />
+              <Bar dataKey="GradRate" name="Completion Rate %" fill="#5648B7" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* CHART 5: Map Visual */}
+        {/* CHART 4: Program Performance (Enrolled Trajectory) */}
         <div style={chartBox}>
-          <h3 style={chartTitle}>5. Enrollment Population Map</h3>
-          <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#e2e8f0', borderRadius: '8px' }}>
-             [Geographic Map Placeholder]
-          </div>
+          <h3 style={chartTitle}>4. Performance Trajectory across Sprints</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={sprintData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
+              <YAxis tick={{fontSize: 12}} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} />
+              <Legend wrapperStyle={{fontSize: '12px'}} />
+              <Line type="monotone" dataKey="Enrolled" stroke="#002B56" strokeWidth={3} />
+              <Line type="monotone" dataKey="Activated" stroke="#FF5347" strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+        
+        {/* CHART 5: Enrollment Population Map (Horizontal Bar Alternative) */}
+        <div style={chartBox}>
+          <h3 style={chartTitle}>5. Enrollment Population Distribution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={countryDataByPop} layout="vertical" margin={{ left: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+              <XAxis type="number" tick={{fontSize: 12}} />
+              <YAxis dataKey="Country" type="category" tick={{fontSize: 11}} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} />
+              <Bar dataKey="Enrolled" fill="#05F283" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* CHART 6: CSAT & NPS */}
         <div style={chartBox}>
-          <h3 style={chartTitle}>6. CSAT & NPS by Sprint</h3>
-          {Object.entries(sprintStats).map(([sprint, stats]: any, i) => (
-             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-               <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{sprint}</span>
-               <span style={{ fontSize: '14px', color: '#002B56' }}>CSAT: {(stats.count > 0 ? stats.csat/stats.count : 0).toFixed(1)}</span>
-               <span style={{ fontSize: '14px', color: '#059669' }}>NPS: {(stats.count > 0 ? stats.nps/stats.count : 0).toFixed(1)}</span>
-             </div>
-          ))}
+          <h3 style={chartTitle}>6. CSAT & NPS Scores by Sprint</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <ComposedChart data={sprintData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
+              <YAxis tick={{fontSize: 12}} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} />
+              <Legend wrapperStyle={{fontSize: '12px'}} />
+              <Bar dataKey="NPS" fill="#FF5347" radius={[4, 4, 0, 0]} />
+              <Line type="monotone" dataKey="CSAT" stroke="#002B56" strokeWidth={3} dot={{r: 5}} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
 
       </div>
@@ -215,7 +266,7 @@ const chartBox = {
 };
 
 const chartTitle = {
-  margin: '0 0 15px 0', 
+  margin: '0 0 20px 0', 
   fontSize: '16px', 
   borderBottom: '2px solid #f1f5f9', 
   paddingBottom: '10px',
