@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [sprint, setSprint] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // The New Primary KPI Target
+  // The Primary KPI Target
   const GRADUATION_TARGET = 200000;
 
   useEffect(() => {
@@ -52,8 +52,8 @@ export default function Dashboard() {
   const projectedGrads = Math.floor(totals.activated * 0.5);
   const healthStatus = activationRate >= 80 ? {icon: '✅ Healthy', text: 'Healthy'} : activationRate >= 60 ? {icon: '⚠️ At Risk', text: 'At Risk'} : {icon: '🚨 Critical', text: 'Critical'};
 
-  // Calculate Progress against the 200k Target
-  const gradProgressPercent = Math.min((projectedGrads / GRADUATION_TARGET) * 100, 100);
+  // Calculate Progress against the 200k Target using ACTUAL Graduates
+  const gradProgressPercent = Math.min((totals.graduated / GRADUATION_TARGET) * 100, 100);
 
   const countryMap = filteredData.reduce((acc: Record<string, CountryData>, row) => {
     const country = row.Country || 'Unknown';
@@ -65,7 +65,6 @@ export default function Dashboard() {
     let gradMult = program.includes('PF') ? 3 : 2;
     const rowRev = ((activated - graduated) * 5) + (graduated * 5 * gradMult);
     
-    // Country-level projected grads based on 50% of activation
     const countryProjectedGrads = Math.floor(activated * 0.5);
 
     if (!acc[country]) {
@@ -78,7 +77,6 @@ export default function Dashboard() {
     return acc;
   }, {});
 
-  // Sort by Projected Graduates instead of Revenue
   const sortedByGrads = (Object.values(countryMap) as CountryData[]).sort((a, b) => b.projectedGrads - a.projectedGrads);
   
   const lowHealthCountries = (Object.values(countryMap) as CountryData[])
@@ -137,11 +135,11 @@ export default function Dashboard() {
         <Card title="Projected Total Revenue" value={`$${totals.revProjected.toLocaleString()}`} subText="Full Access Fee Target" />
       </div>
 
-      {/* PROGRESS BAR: Shifted to Graduation Target */}
+      {/* PROGRESS BAR: Tracking Actual Graduates */}
       <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '15px', marginBottom: '35px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
-          <span>Progress to 200,000 Graduates Target</span>
-          <span>{gradProgressPercent.toFixed(1)}% ({projectedGrads.toLocaleString()})</span>
+          <span>Actual Progress to 200,000 Graduates Target</span>
+          <span>{gradProgressPercent.toFixed(1)}% ({totals.graduated.toLocaleString()})</span>
         </div>
         <div style={{ width: '100%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
           <div style={{ width: `${gradProgressPercent}%`, height: '100%', backgroundColor: '#05F283', transition: 'width 1s ease-in-out' }}></div>
@@ -154,10 +152,10 @@ export default function Dashboard() {
           <h3 style={{ margin: '0 0 20px 0', color: '#05F283', fontSize: '22px' }}>Delivery Narrative</h3>
           <p style={{ fontSize: '18px', lineHeight: '1.6' }}>
             Our primary delivery focus indicates a <strong>{healthStatus.text}</strong> activation state. 
-            Current trajectory models <strong>{projectedGrads.toLocaleString()} graduates</strong> entering the final completion phase against our 200,000 target.
+            Current trajectory models <strong>{projectedGrads.toLocaleString()} potential graduates</strong> entering the final completion phase against our 200,000 target.
           </p>
           <p style={{ fontSize: '18px', lineHeight: '1.6', marginTop: '15px' }}>
-            The leading region driving graduation volume is currently <strong>{sortedByGrads[0]?.name || 'N/A'}</strong>.
+            The leading region driving graduation volume pipeline is currently <strong>{sortedByGrads[0]?.name || 'N/A'}</strong>.
           </p>
           {activationRate < 80 && (
             <div style={{ marginTop: '25px', padding: '20px', borderLeft: '6px solid #FF5347', backgroundColor: 'rgba(255,255,255,0.05)', fontSize: '16px', borderRadius: '0 10px 10px 0' }}>
@@ -167,7 +165,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* TOP COUNTRIES: Shifted to Graduation Volume */}
+        {/* TOP COUNTRIES */}
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
           <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>Top 5 Countries by Graduation Pipeline</h3>
           {sortedByGrads.slice(0, 5).map((c, i) => (
