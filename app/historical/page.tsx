@@ -34,7 +34,7 @@ export default function AnalyticsPage() {
     });
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', marginLeft: '260px', fontSize: '20px', color: '#002B56' }}>Loading Analytics Engine...</div>;
+  if (loading) return <div style={{ padding: '40px', marginLeft: '260px', fontSize: '20px', color: '#002B56' }}>Fetching Data from all CA Program Trackers....</div>;
 
   // --- FILTERING LOGIC ---
   const programFilteredData = programFilter === 'All' 
