@@ -56,8 +56,6 @@ export default function AnalyticsPage() {
   const activationRate = totals.enrolled > 0 ? (totals.activated / totals.enrolled) * 100 : 0;
 
   // --- CHART DATA PREPARATION ---
-  
-  // 1. Group by Sprint (For Charts 1, 2, 4, 6)
   const sprintGroups = programFilteredData.reduce((acc: any, row) => {
     const s = row.Sprint || 'Unknown Sprint';
     if (!acc[s]) acc[s] = { Sprint: s, Enrolled: 0, Activated: 0, Graduated: 0, CSAT_Sum: 0, NPS_Sum: 0, count: 0 };
@@ -77,7 +75,6 @@ export default function AnalyticsPage() {
     NPS: d.count > 0 ? parseFloat((d.NPS_Sum / d.count).toFixed(1)) : 0,
   })).sort((a: any, b: any) => a.Sprint.localeCompare(b.Sprint));
 
-  // 2. Group by Country (For Charts 3, 5)
   const countryGroups = programFilteredData.reduce((acc: any, row) => {
     const c = row.Country || 'Unknown';
     if (!acc[c]) acc[c] = { Country: c, Enrolled: 0, Activated: 0, Graduated: 0 };
@@ -89,7 +86,7 @@ export default function AnalyticsPage() {
 
   const countryDataByPop = Object.values(countryGroups)
     .sort((a: any, b: any) => b.Enrolled - a.Enrolled)
-    .slice(0, 8); // Top 8 for visual clarity
+    .slice(0, 8); 
 
   const countryDataByGrad = Object.values(countryGroups)
     .map((d: any) => ({
@@ -102,7 +99,6 @@ export default function AnalyticsPage() {
   return (
     <div style={{ marginLeft: '260px', padding: '40px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif', color: '#002B56' }}>
       
-      {/* HEADER & FILTERS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '32px' }}>Analytics & Performance</h1>
@@ -127,22 +123,14 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* SCORECARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
         <Card title="Total Paid Enrolled" value={totals.enrolled.toLocaleString()} />
         <Card title="Total Activated" value={totals.activated.toLocaleString()} />
-        <Card 
-          title="Activation Rate" 
-          value={`${activationRate.toFixed(1)}%`} 
-          valueColor={activationRate < 80 ? '#ef4444' : '#059669'} 
-        />
+        <Card title="Activation Rate" value={`${activationRate.toFixed(1)}%`} valueColor={activationRate < 80 ? '#ef4444' : '#059669'} />
         <Card title="Graduated Learners" value={totals.graduated.toLocaleString()} />
       </div>
 
-      {/* CHARTS GRID SECTION */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
-        
-        {/* CHART 1: Activation vs Graduation */}
         <div style={chartBox}>
           <h3 style={chartTitle}>1. Activation vs Graduation (By Sprint)</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -158,7 +146,6 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* CHART 2: Graduation Rates by Sprint */}
         <div style={chartBox}>
           <h3 style={chartTitle}>2. Graduation Rates by Sprint</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -166,18 +153,15 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
               <YAxis tick={{fontSize: 12}} domain={[0, 100]} unit="%" />
-              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val) => `${val}%`} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val: number) => `${val}%`} />
               <Legend wrapperStyle={{fontSize: '12px'}} />
               <Line type="monotone" dataKey="GradRate" name="Graduation Rate %" stroke="#5648B7" strokeWidth={3} dot={{r: 5}} />
             </LineChart>
           </ResponsiveContainer>
         </div>
-
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
-        
-        {/* CHART 3: Graduation Completion by Country */}
         <div style={chartBox}>
           <h3 style={chartTitle}>3. Graduation Rate by Country (Top 8)</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -185,17 +169,17 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="Country" tick={{fontSize: 11}} />
               <YAxis tick={{fontSize: 12}} domain={[0, 100]} unit="%" />
-              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val) => `${val}%`} />
+              <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(val: number) => `${val}%`} />
               <Bar dataKey="GradRate" name="Completion Rate %" fill="#5648B7" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* CHART 4: Program Performance (Enrolled Trajectory) */}
         <div style={chartBox}>
           <h3 style={chartTitle}>4. Performance Trajectory across Sprints</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={sprintData}>
+            {/* FIXED: Changed AreaChart to LineChart to match the <Line> tags inside */}
+            <LineChart data={sprintData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="Sprint" tick={{fontSize: 12}} />
               <YAxis tick={{fontSize: 12}} />
@@ -203,15 +187,12 @@ export default function AnalyticsPage() {
               <Legend wrapperStyle={{fontSize: '12px'}} />
               <Line type="monotone" dataKey="Enrolled" stroke="#002B56" strokeWidth={3} />
               <Line type="monotone" dataKey="Activated" stroke="#FF5347" strokeWidth={3} />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
-
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-        
-        {/* CHART 5: Enrollment Population Map (Horizontal Bar Alternative) */}
         <div style={chartBox}>
           <h3 style={chartTitle}>5. Enrollment Population Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -225,7 +206,6 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* CHART 6: CSAT & NPS */}
         <div style={chartBox}>
           <h3 style={chartTitle}>6. CSAT & NPS Scores by Sprint</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -240,13 +220,11 @@ export default function AnalyticsPage() {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-
       </div>
     </div>
   );
 }
 
-// --- STYLING CONSTANTS ---
 const filterStyle = {
   padding: '10px 15px', 
   borderRadius: '8px', 
